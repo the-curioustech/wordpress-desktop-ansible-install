@@ -1,0 +1,48 @@
+---
+- hosts: localhost
+  tasks:
+
+    - name: ensure that wordpress isn't installed
+      file:
+        path: ~/bin/wordpress
+        state: absent
+
+    - name: Download the latest wordpress desktop release
+      get_url:
+        url: https://public-api.wordpress.com/rest/v1.1/desktop/linux/download
+        dest: /tmp/wordpress.tar_gz
+        mode: 0644
+
+    - name: Ensure the new wordpress directory exists
+      file:
+        path: ~/bin
+        state: directory
+        mode: 0755
+
+    - name: unzip wordpress and place it in the correct applications location $HOME/bin
+      unarchive: 
+        src: /tmp/wordpress.tar_gz
+        dest: ~/bin
+      register: untar_result
+
+    - debug:
+        var: untar_result
+
+    - name: rename wordpress folder
+      shell: |
+        mv -fv ~/bin/wordpress* ~/bin/wordpress
+      register: move_cmd_result
+
+    - debug:
+        var: move_cmd_result
+
+    - name: Deploy a Desktop launcher to launch the application.
+      template:
+        src: wordpress_desktop.j2
+        dest: ~/.local/share/applications/wordpress.desktop
+        mode: 0775
+
+    - name: Clean up downloaded files
+      file:
+        path: /tmp/wordpress.tar_gz
+        state: absent
